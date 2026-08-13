@@ -1,0 +1,157 @@
+{
+  "producer": "ledger-api",
+  "generatedAt": "2026-08-05T00:00:00Z",
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/auth/signup",
+      "description": "Create a new account and return an auth token.",
+      "responseFields": {
+        "token": { "type": "string", "criticality": "high" },
+        "account.id": { "type": "string", "criticality": "critical" },
+        "account.email": { "type": "string", "criticality": "critical" },
+        "account.name": { "type": "string", "criticality": "medium" }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "description": "Authenticate with email/password and return an auth token.",
+      "responseFields": {
+        "token": { "type": "string", "criticality": "high" },
+        "account.id": { "type": "string", "criticality": "critical" },
+        "account.email": { "type": "string", "criticality": "critical" },
+        "account.name": { "type": "string", "criticality": "medium" }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/clients",
+      "description": "List all clients belonging to the authenticated account.",
+      "responseFields": {
+        "clients": { "type": "array", "criticality": "medium" },
+        "clients.id": { "type": "string", "criticality": "critical" },
+        "clients.accountId": { "type": "string", "criticality": "high" },
+        "clients.name": { "type": "string", "criticality": "medium" },
+        "clients.email": { "type": "string", "criticality": "critical" },
+        "clients.phone": { "type": "string", "criticality": "low" },
+        "clients.billingType": { "type": "string", "criticality": "medium" },
+        "clients.recurringStatus": { "type": "string", "criticality": "medium" },
+        "clients.createdAt": { "type": "string", "criticality": "low" }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/clients",
+      "description": "Create a new client for the authenticated account.",
+      "responseFields": {
+        "client.id": { "type": "string", "criticality": "critical" },
+        "client.accountId": { "type": "string", "criticality": "high" },
+        "client.name": { "type": "string", "criticality": "medium" },
+        "client.email": { "type": "string", "criticality": "critical" },
+        "client.phone": { "type": "string", "criticality": "low" },
+        "client.billingType": { "type": "string", "criticality": "medium" },
+        "client.recurringStatus": { "type": "string", "criticality": "medium" },
+        "client.createdAt": { "type": "string", "criticality": "low" }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/clients/:id",
+      "description": "Fetch a single client by id.",
+      "responseFields": {
+        "client.id": { "type": "string", "criticality": "critical" },
+        "client.accountId": { "type": "string", "criticality": "high" },
+        "client.name": { "type": "string", "criticality": "medium" },
+        "client.email": { "type": "string", "criticality": "critical" },
+        "client.phone": { "type": "string", "criticality": "low" },
+        "client.billingType": { "type": "string", "criticality": "medium" },
+        "client.recurringStatus": { "type": "string", "criticality": "medium" },
+        "client.createdAt": { "type": "string", "criticality": "low" }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/invoices",
+      "description": "List all invoices for the authenticated account, with the client name attached.",
+      "responseFields": {
+        "invoices": { "type": "array", "criticality": "medium" },
+        "invoices.id": { "type": "string", "criticality": "critical" },
+        "invoices.invoiceNumber": { "type": "string", "criticality": "high" },
+        "invoices.status": { "type": "string", "criticality": "high" },
+        "invoices.currency": { "type": "string", "criticality": "high" },
+        "invoices.totalCents": { "type": "number", "criticality": "critical" },
+        "invoices.issueDate": { "type": "string", "criticality": "medium" },
+        "invoices.dueDate": { "type": "string", "criticality": "medium" },
+        "invoices.customer_name": { "type": "string", "criticality": "medium" }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/invoices",
+      "description": "Create a new invoice (with line items) for a client.",
+      "responseFields": {
+        "invoice.id": { "type": "string", "criticality": "critical" },
+        "invoice.accountId": { "type": "string", "criticality": "high" },
+        "invoice.clientId": { "type": "string", "criticality": "high" },
+        "invoice.invoiceNumber": { "type": "string", "criticality": "high" },
+        "invoice.status": { "type": "string", "criticality": "high" },
+        "invoice.currency": { "type": "string", "criticality": "high" },
+        "invoice.subtotalCents": { "type": "number", "criticality": "critical" },
+        "invoice.taxCents": { "type": "number", "criticality": "critical" },
+        "invoice.totalCents": { "type": "number", "criticality": "critical" },
+        "invoice.issueDate": { "type": "string", "criticality": "medium" },
+        "invoice.dueDate": { "type": "string", "criticality": "medium" },
+        "invoice.createdAt": { "type": "string", "criticality": "low" }
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/invoices/:id",
+      "description": "Fetch a single invoice by id, with customer details flattened onto the response and optional currency conversion via ?displayCurrency=.",
+      "responseFields": {
+        "id": { "type": "string", "criticality": "critical" },
+        "invoiceNumber": { "type": "string", "criticality": "high" },
+        "status": { "type": "string", "criticality": "high" },
+        "currency": { "type": "string", "criticality": "high" },
+        "displayCurrency": { "type": "string", "criticality": "medium" },
+        "subtotalCents": { "type": "number", "criticality": "critical" },
+        "taxCents": { "type": "number", "criticality": "critical" },
+        "totalCents": { "type": "number", "criticality": "critical" },
+        "displayTotalCents": { "type": "number", "criticality": "critical" },
+        "issueDate": { "type": "string", "criticality": "medium" },
+        "dueDate": { "type": "string", "criticality": "medium" },
+        "customer_name": { "type": "string", "criticality": "medium" },
+        "customer_email": { "type": "string", "criticality": "critical" },
+        "subscription_status": { "type": "string", "criticality": "high" },
+        "lineItems": { "type": "array", "criticality": "medium" },
+        "lineItems.id": { "type": "string", "criticality": "high" },
+        "lineItems.invoiceId": { "type": "string", "criticality": "high" },
+        "lineItems.description": { "type": "string", "criticality": "low" },
+        "lineItems.quantity": { "type": "number", "criticality": "medium" },
+        "lineItems.unitPriceCents": { "type": "number", "criticality": "high" },
+        "lineItems.amountCents": { "type": "number", "criticality": "critical" }
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/invoices/:id/send",
+      "description": "Mark an invoice as sent.",
+      "responseFields": {
+        "invoice.id": { "type": "string", "criticality": "critical" },
+        "invoice.accountId": { "type": "string", "criticality": "high" },
+        "invoice.clientId": { "type": "string", "criticality": "high" },
+        "invoice.invoiceNumber": { "type": "string", "criticality": "high" },
+        "invoice.status": { "type": "string", "criticality": "high" },
+        "invoice.currency": { "type": "string", "criticality": "high" },
+        "invoice.subtotalCents": { "type": "number", "criticality": "critical" },
+        "invoice.taxCents": { "type": "number", "criticality": "critical" },
+        "invoice.totalCents": { "type": "number", "criticality": "critical" },
+        "invoice.issueDate": { "type": "string", "criticality": "medium" },
+        "invoice.dueDate": { "type": "string", "criticality": "medium" },
+        "invoice.createdAt": { "type": "string", "criticality": "low" }
+      }
+    }
+  ],
+  "docsMarkdown": "# Ledger API Reference\n\nAll routes except `/api/auth/*` require `Authorization: Bearer <token>` (see `/api/auth/login`).\n\n## Auth\n\n### POST /api/auth/signup\nCreate a new account. Returns `{ token, account: { id, email, name } }`.\n\n### POST /api/auth/login\nAuthenticate with email/password. Returns `{ token, account: { id, email, name } }`.\n\n## Clients\n\n### GET /api/clients\nList clients for the authenticated account. Returns `{ clients: Client[] }`.\n\n### POST /api/clients\nCreate a client. Returns `{ client: Client }`.\n\n### GET /api/clients/:id\nFetch a client by id. Returns `{ client: Client }`.\n\nA `Client` has: `id, accountId, name, email, phone, billingType, recurringStatus, createdAt`.\n\n## Invoices\n\n### GET /api/invoices\nList invoices for the authenticated account. Returns `{ invoices: InvoiceSummary[] }`, where each summary includes `id, invoiceNumber, status, currency, totalCents, issueDate, dueDate, customer_name`.\n\n### POST /api/invoices\nCreate an invoice with line items for a client. Returns `{ invoice: Invoice }`.\n\n### GET /api/invoices/:id\nFetch a single invoice. Customer fields are flattened directly onto the response as `customer_name`, `customer_email`, `subscription_status` (not nested under a `customer` object). Supports `?displayCurrency=XXX` to add converted `displayCurrency` / `displayTotalCents` fields alongside the original `currency` / `totalCents`. Also returns `lineItems: LineItem[]`.\n\n### POST /api/invoices/:id/send\nMark an invoice as `sent`. Returns `{ invoice: Invoice }`.\n\nAn `Invoice` has: `id, accountId, clientId, invoiceNumber, status, currency, subtotalCents, taxCents, totalCents, issueDate, dueDate, createdAt`.\n\nA `LineItem` has: `id, invoiceId, description, quantity, unitPriceCents, amountCents`.\n"
+}

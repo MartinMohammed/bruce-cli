@@ -1,0 +1,293 @@
+{
+  "producer": "ledger-api",
+  "generatedAt": "2026-08-05T00:00:00Z",
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/auth/login",
+      "purpose": "Authenticate the user on the login page and establish the app session",
+      "criticality": "critical",
+      "fields": {
+        "token": {
+          "importance": "critical",
+          "usedIn": [
+            "src/pages/Login.tsx",
+            "src/api/client.ts",
+            "src/App.tsx"
+          ]
+        },
+        "account": {
+          "importance": "medium",
+          "usedIn": [
+            "src/pages/Login.tsx",
+            "src/api/client.ts",
+            "src/components/Layout.tsx",
+            "src/pages/Settings.tsx"
+          ]
+        }
+      },
+      "errorHandling": {
+        "invalid_credentials": "handled",
+        "network_error": "missing",
+        "server_error": "missing",
+        "timeout": "missing"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/clients",
+      "purpose": "List clients to populate the Clients page table and the client-picker dropdown on the New Invoice form",
+      "criticality": "high",
+      "fields": {
+        "clients": {
+          "importance": "critical",
+          "usedIn": [
+            "src/pages/Clients.tsx",
+            "src/pages/InvoiceCreate.tsx"
+          ]
+        },
+        "id": {
+          "importance": "critical",
+          "usedIn": [
+            "src/pages/Clients.tsx",
+            "src/pages/InvoiceCreate.tsx"
+          ]
+        },
+        "name": {
+          "importance": "high",
+          "usedIn": [
+            "src/pages/Clients.tsx",
+            "src/pages/InvoiceCreate.tsx"
+          ]
+        },
+        "email": {
+          "importance": "medium",
+          "usedIn": [
+            "src/pages/Clients.tsx"
+          ]
+        },
+        "billingType": {
+          "importance": "high",
+          "usedIn": [
+            "src/pages/Clients.tsx"
+          ]
+        },
+        "recurringStatus": {
+          "importance": "medium",
+          "usedIn": [
+            "src/pages/Clients.tsx"
+          ]
+        }
+      },
+      "errorHandling": {
+        "fetch_failure": "missing",
+        "unauthorized": "missing",
+        "timeout": "missing"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/clients",
+      "purpose": "Create a new client from the Add Client form on the Clients page",
+      "criticality": "medium",
+      "fields": {},
+      "errorHandling": {
+        "validation_error": "missing",
+        "network_error": "missing"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/invoices",
+      "purpose": "List invoices to drive Dashboard KPI cards and the Invoices list page",
+      "criticality": "critical",
+      "fields": {
+        "invoices": {
+          "importance": "critical",
+          "usedIn": [
+            "src/pages/Dashboard.tsx",
+            "src/pages/Invoices.tsx",
+            "src/components/Dashboard/RecentInvoices.tsx"
+          ]
+        },
+        "id": {
+          "importance": "critical",
+          "usedIn": [
+            "src/components/Dashboard/RecentInvoices.tsx"
+          ]
+        },
+        "status": {
+          "importance": "critical",
+          "usedIn": [
+            "src/pages/Dashboard.tsx",
+            "src/components/Dashboard/RecentInvoices.tsx"
+          ]
+        },
+        "totalCents": {
+          "importance": "critical",
+          "usedIn": [
+            "src/pages/Dashboard.tsx",
+            "src/components/Dashboard/RecentInvoices.tsx"
+          ]
+        },
+        "currency": {
+          "importance": "high",
+          "usedIn": [
+            "src/components/Dashboard/RecentInvoices.tsx"
+          ]
+        },
+        "invoiceNumber": {
+          "importance": "high",
+          "usedIn": [
+            "src/components/Dashboard/RecentInvoices.tsx"
+          ]
+        },
+        "customer_name": {
+          "importance": "high",
+          "usedIn": [
+            "src/components/Dashboard/RecentInvoices.tsx"
+          ]
+        },
+        "dueDate": {
+          "importance": "medium",
+          "usedIn": [
+            "src/components/Dashboard/RecentInvoices.tsx"
+          ]
+        }
+      },
+      "errorHandling": {
+        "fetch_failure": "missing",
+        "unauthorized": "missing",
+        "timeout": "missing"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/invoices",
+      "purpose": "Create a new invoice from the New Invoice form and redirect to its detail page",
+      "criticality": "high",
+      "fields": {
+        "id": {
+          "importance": "critical",
+          "usedIn": [
+            "src/pages/InvoiceCreate.tsx"
+          ]
+        }
+      },
+      "errorHandling": {
+        "validation_error": "missing",
+        "network_error": "missing"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/invoices/:id",
+      "purpose": "Fetch a single invoice's detail (bill-to info, line items, totals, currency conversion) for the invoice detail page and to feed the send-invoice component",
+      "criticality": "critical",
+      "fields": {
+        "id": {
+          "importance": "critical",
+          "usedIn": [
+            "src/pages/InvoiceDetail.tsx",
+            "src/components/InvoiceGenerator.tsx"
+          ]
+        },
+        "invoiceNumber": {
+          "importance": "high",
+          "usedIn": [
+            "src/pages/InvoiceDetail.tsx",
+            "src/components/InvoiceGenerator.tsx"
+          ]
+        },
+        "status": {
+          "importance": "critical",
+          "usedIn": [
+            "src/pages/InvoiceDetail.tsx",
+            "src/components/InvoiceGenerator.tsx"
+          ]
+        },
+        "currency": {
+          "importance": "critical",
+          "usedIn": [
+            "src/pages/InvoiceDetail.tsx",
+            "src/components/InvoiceGenerator.tsx"
+          ]
+        },
+        "displayCurrency": {
+          "importance": "medium",
+          "usedIn": [
+            "src/pages/InvoiceDetail.tsx"
+          ]
+        },
+        "subtotalCents": {
+          "importance": "high",
+          "usedIn": [
+            "src/pages/InvoiceDetail.tsx"
+          ]
+        },
+        "taxCents": {
+          "importance": "high",
+          "usedIn": [
+            "src/pages/InvoiceDetail.tsx"
+          ]
+        },
+        "totalCents": {
+          "importance": "critical",
+          "usedIn": [
+            "src/pages/InvoiceDetail.tsx",
+            "src/components/InvoiceGenerator.tsx"
+          ]
+        },
+        "displayTotalCents": {
+          "importance": "medium",
+          "usedIn": [
+            "src/pages/InvoiceDetail.tsx"
+          ]
+        },
+        "customer_name": {
+          "importance": "critical",
+          "usedIn": [
+            "src/pages/InvoiceDetail.tsx",
+            "src/components/InvoiceGenerator.tsx"
+          ]
+        },
+        "customer_email": {
+          "importance": "critical",
+          "usedIn": [
+            "src/pages/InvoiceDetail.tsx",
+            "src/components/InvoiceGenerator.tsx"
+          ]
+        },
+        "subscription_status": {
+          "importance": "medium",
+          "usedIn": [
+            "src/pages/InvoiceDetail.tsx"
+          ]
+        },
+        "lineItems": {
+          "importance": "critical",
+          "usedIn": [
+            "src/pages/InvoiceDetail.tsx"
+          ]
+        }
+      },
+      "errorHandling": {
+        "not_found": "missing",
+        "network_error": "missing",
+        "timeout": "missing"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/api/invoices/:id/send",
+      "purpose": "Send the invoice email to the client from the invoice detail page",
+      "criticality": "high",
+      "fields": {},
+      "errorHandling": {
+        "send_failure": "missing",
+        "network_error": "missing",
+        "not_found": "missing"
+      }
+    }
+  ]
+}

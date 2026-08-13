@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.local
+npm-debug.log*
+.DS_Store
+
+# Bruce local state — real product artifacts of using the CLI, not meant to be hand-authored or committed here
+.bruce/
+bruce/.credentials.json
+bruce/docs/

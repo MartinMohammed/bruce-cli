@@ -1,0 +1,96 @@
+export function publisherInitPrompt(producerSlug: string, producerName: string, targetPath: string): string {
+  return `You are acting as the \`bruce init\` command for Bruce, a change-intelligence tool that gives AI coding agents missing cross-repository context. You are running inside the repository for "${producerName}" (slug: "${producerSlug}"), which is registered with Bruce as a PUBLISHER — this project owns and exposes an API.
+
+Your job: explore this repository's source code to find every HTTP endpoint it exposes (route handlers, controllers, OpenAPI specs, etc.), determine the shape of each endpoint's JSON response, and write a contract snapshot describing it.
+
+Write your findings to the file \`${targetPath}\` (relative to the repo root) using your Edit or Write tool. The file MUST be valid JSON matching exactly this shape:
+
+{
+  "producer": "${producerSlug}",
+  "generatedAt": "<ISO 8601 timestamp>",
+  "endpoints": [
+    {
+      "method": "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
+      "path": "<route path, e.g. /api/invoices/:id>",
+      "description": "<short description>",
+      "responseFields": {
+        "<fieldName>": {
+          "type": "<string|number|boolean|object|array>",
+          "criticality": "low" | "medium" | "high" | "critical",
+          "replaces": ["<old field name(s) this supersedes, if any — omit otherwise>"]
+        }
+      }
+    }
+  ],
+  "docsMarkdown": "<a short markdown API reference summarizing every endpoint, for consumers to read>"
+}
+
+Rules:
+- Only include endpoints that return JSON and are part of this project's public API surface (skip /health and internal-only routes).
+- For nested response fields (e.g. a field nested under customer.profile.name), use the full dotted path as the field name key.
+- Judge "criticality" by how the field is used: fields tied to billing, identity (ids, emails), or read in multiple places are "high" or "critical"; purely cosmetic/display fields are "low".
+- If you can tell from git history/comments that a field was renamed or restructured from an older name (rather than being newly added), set "replaces" to the old field name(s) — this is what lets Bruce tell consumers "X was renamed to Y" instead of just "X was removed".
+- Write ONLY to ${targetPath}. Do not modify any other files.
+- After writing the file, stop. Do not explain your work in your final response — just confirm the file was written.`;
+}
+
+export function consumerInitPrompt(producerSlug: string, producerName: string, targetPath: string, docsPath: string): string {
+  return `You are acting as the \`bruce init\` command for Bruce, a change-intelligence tool that gives AI coding agents missing cross-repository context. You are running inside a repository that CONSUMES the "${producerName}" API (slug: "${producerSlug}"). Bruce has already downloaded that API's current documentation to \`${docsPath}\` — read it first to know what endpoints and fields exist upstream.
+
+Your job: find every place in this repository's source code that calls the "${producerName}" API (HTTP requests, SDK calls, fetch/axios calls to its base URL, etc.), and for each endpoint actually used, determine which response fields this codebase reads, how important each field is here, which files use it, and how errors are handled.
+
+Write your findings to the file \`${targetPath}\` (relative to the repo root) using your Edit or Write tool. The file MUST be valid JSON matching exactly this shape:
+
+{
+  "producer": "${producerSlug}",
+  "generatedAt": "<ISO 8601 timestamp>",
+  "endpoints": [
+    {
+      "method": "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
+      "path": "<route path as documented upstream, e.g. /api/invoices/:id>",
+      "purpose": "<why this codebase calls this endpoint>",
+      "criticality": "low" | "medium" | "high" | "critical",
+      "fields": {
+        "<fieldName>": {
+          "importance": "low" | "medium" | "high" | "critical",
+          "usedIn": ["<relative file path>"]
+        }
+      },
+      "errorHandling": {
+        "<error case, e.g. not_found, timeout>": "handled" | "missing"
+      }
+    }
+  ]
+}
+
+Rules:
+- Only include fields this codebase actually reads — don't list the whole upstream schema, only what's consumed.
+- "usedIn" should list every file that reads that specific field, not just where the API call itself lives.
+- Write ONLY to ${targetPath}. Do not modify any other files.
+- After writing the file, stop. Do not explain your work in your final response — just confirm the file was written.`;
+}
+
+export function incrementalScanPrompt(
+  targetPath: string,
+  existingContent: string,
+  changedFiles: string[],
+): string {
+  return `You are acting as the \`bruce scan\` command for Bruce — an INCREMENTAL update, not a full re-scan.
+
+The following files changed in this repository since the last scan:
+${changedFiles.map((f) => `- ${f}`).join("\n")}
+
+Here is the CURRENT content of ${targetPath}, generated by a previous full scan:
+
+${existingContent}
+
+Your job: check whether any of the changed files above affect what's recorded in ${targetPath} (a new, removed, or changed endpoint, field, or usage). If none of the changes are relevant, make NO changes to the file.
+
+If changes ARE relevant, PATCH the existing file — update only the specific fields/endpoints affected by the diff, preserving everything else exactly as it was. Do NOT regenerate the file from scratch; do not touch entries unrelated to the changed files.
+
+If a field was renamed or restructured (not just removed), the new field's entry MUST include a "replaces" array naming the old field(s) it supersedes — e.g. if "customer_name" became "customer.profile.name", the new "customer.profile.name" entry gets "replaces": ["customer_name"], and the old "customer_name" entry is removed. This distinction (renamed vs. plain removal) is exactly what Bruce reports to affected consumers, so get it right.
+
+If the file has a top-level "docsMarkdown" field (publisher snapshots do; consumer mappings don't — skip this if it's absent), update that markdown too so it stays consistent with whatever you just patched: the current field/endpoint list must reflect reality, not the pre-patch shape. Consuming repos' agents read this file directly, so a stale field name here is actively misleading, not just outdated. Keep it a concise reference, not a running changelog — fold a rename into a short existing "breaking changes" note rather than appending unbounded history.
+
+Write the result (patched or unchanged) to ${targetPath} using your Edit tool, keeping the exact same JSON schema as the current content. After writing, stop. Do not explain your work in your final response — just confirm what changed, if anything.`;
+}

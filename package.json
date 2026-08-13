@@ -1,0 +1,56 @@
+{
+  "name": "@martin_mohammed/bruce-cli",
+  "version": "0.1.4",
+  "type": "module",
+  "description": "Change intelligence for AI coding agents — Bruce tells Claude (or any coding agent) who depends on this API, what just changed, and how to migrate safely.",
+  "keywords": [
+    "cli",
+    "api",
+    "breaking-changes",
+    "change-management",
+    "ai-agents",
+    "claude",
+    "claude-code",
+    "developer-tools",
+    "contract-testing",
+    "microservices"
+  ],
+  "homepage": "https://github.com/MartinMohammed/bruce-cli#readme",
+  "bugs": {
+    "url": "https://github.com/MartinMohammed/bruce-cli/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MartinMohammed/bruce-cli.git"
+  },
+  "license": "MIT",
+  "author": "Martin Mohammed",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "bruce": "./bin/bruce.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "bin",
+    "src",
+    "fallback"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.9.1",
+    "commander": "^13.1.0",
+    "picocolors": "^1.1.1",
+    "tsx": "^4.19.2",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "typescript": "^5.7.2"
+  }
+}
