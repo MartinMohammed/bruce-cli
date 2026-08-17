@@ -23,6 +23,26 @@ export function credentialsPath(cwd = process.cwd()): string {
   return path.join(bruceDir(cwd), ".credentials.json");
 }
 
+/**
+ * bruce/producer.json — committed (no leading dot, unlike credentials.json), holds only the
+ * non-secret {producerId, slug} pair. Lets `bruce init --agent-key` recognize "this repo is
+ * already registered" from a fresh checkout on a different machine/workspace, where the
+ * gitignored .credentials.json never survived — see reclaimProducer() in lib/api.ts.
+ */
+export function producerManifestPath(cwd = process.cwd()): string {
+  return path.join(bruceDir(cwd), "producer.json");
+}
+
+/**
+ * bruce/db-producer.json — same idea as producer.json, kept as a separate file rather than
+ * folded in, since a single repo can plausibly be both: an API producer in its own right
+ * (bruce init --agent-key) AND the place a database producer for it gets registered from
+ * (bruce producers connect-db). One file per kind avoids the two clobbering each other.
+ */
+export function dbProducerManifestPath(cwd = process.cwd()): string {
+  return path.join(bruceDir(cwd), "db-producer.json");
+}
+
 export function publisherPath(cwd = process.cwd()): string {
   return path.join(bruceDir(cwd), "publisher.json");
 }

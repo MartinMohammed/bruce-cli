@@ -1,6 +1,6 @@
 {
   "name": "@martin_mohammed/bruce-cli",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "description": "Change intelligence for AI coding agents — Bruce tells Claude (or any coding agent) who depends on this API, what just changed, and how to migrate safely.",
   "keywords": [

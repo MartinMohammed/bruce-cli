@@ -4,10 +4,12 @@ import { ConsumerIndexSchema, ConsumerMappingSchema, PublisherSnapshotSchema, co
 import pc from "picocolors";
 import { generateFile } from "../claude/generate.js";
 import { consumerInitPrompt, publisherInitPrompt } from "../claude/prompts.js";
-import { fetchDocs, pushMapping, whoami } from "../lib/api.js";
+import { ApiError, createProducer, fetchDocs, linkDbConnection, pushMapping, reclaimProducer, whoami } from "../lib/api.js";
 import { ensureBruceDirs, mergeCredentials, readCredentials } from "../lib/credentials.js";
 import { currentCommit, isGitRepo } from "../lib/git.js";
 import { consumersIndexPath, docsPath, fallbackPath } from "../lib/paths.js";
+import { readDbProducerManifest, readProducerManifest, writeProducerManifest } from "../lib/producerManifest.js";
+import { inferProducerName, slugify } from "../lib/slug.js";
 import { setConsumerScanState, setProducerScanState } from "../lib/state.js";
 
 export interface InitCommandOptions {
@@ -16,6 +18,17 @@ export interface InitCommandOptions {
   apiKey?: string;
   bruceUrl?: string;
   token?: string;
+  /**
+   * Auto-discovery onboarding (DESIGN_NOTES.md §17): an owner's agent_key,
+   * used to self-register a brand-new producer instead of requiring an
+   * already-created --api-key. Implies role=publisher. --name/--slug are
+   * optional overrides; both are inferred from package.json/the repo
+   * directory name when omitted, since this path is meant to run unattended
+   * and in parallel across many repos at once.
+   */
+  agentKey?: string;
+  name?: string;
+  slug?: string;
 }
 
 export async function initCommand(options: InitCommandOptions = {}): Promise<void> {
@@ -29,6 +42,84 @@ export async function initCommand(options: InitCommandOptions = {}): Promise<voi
 
   ensureBruceDirs();
   let credentials = readCredentials();
+
+  if (!credentials.producer && !credentials.consumers && options.agentKey) {
+    const bruceApiUrl = options.bruceUrl ?? (await p.text({ message: "Bruce API URL:", initialValue: "http://localhost:4100" }));
+    if (p.isCancel(bruceApiUrl)) return p.cancel("Cancelled.");
+
+    const baseName = options.name ?? inferProducerName();
+    const baseSlug = options.slug ?? slugify(baseName);
+    const spinner = p.spinner();
+
+    // bruce/producer.json is committed (unlike the gitignored .credentials.json), so a repo
+    // checked out fresh somewhere new — a different machine, a second workspace, CI — still
+    // carries its producer identity even with no local credentials. Reclaiming here instead
+    // of registering from scratch is what stops this path from producing a second, duplicate
+    // producer for the same repo.
+    const manifest = readProducerManifest();
+    let created: { producerId: string; producerSlug: string; producerName: string; apiKey: string } | undefined;
+
+    // bruce init only ever deals in API producers — a bruce/producer.json (or a 409's
+    // existingProducerId) pointing at a postgres producer would mean this repo's identity
+    // got mixed up with its database's; fail loudly rather than silently mishandling it.
+    function expectApiKind(result: Awaited<ReturnType<typeof reclaimProducer>>): typeof created {
+      if (result.kind !== "api") {
+        throw new Error(`bruce/producer.json points at a "${result.kind}" producer — bruce init is for API producers only. Did you mean \`bruce producers connect-db\`?`);
+      }
+      return result;
+    }
+
+    if (manifest) {
+      spinner.start(`Reclaiming existing producer "${manifest.slug}" for this checkout`);
+      try {
+        created = expectApiKind(await reclaimProducer(bruceApiUrl, options.agentKey, manifest.producerId));
+      } catch (err) {
+        spinner.stop("Failed", 1);
+        p.log.error(String(err));
+        process.exitCode = 1;
+        return;
+      }
+    } else {
+      spinner.start(`Registering "${baseName}" as a new producer`);
+      try {
+        created = await createProducer(bruceApiUrl, options.agentKey, baseName, baseSlug);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 409 && typeof (err.body as { existingProducerId?: string })?.existingProducerId === "string") {
+          // No local manifest, but the backend already has a producer at this slug under this
+          // owner — almost always this exact repo, registered previously from a workspace
+          // whose local state never made it here. Reclaim it rather than inventing a
+          // random-suffixed sibling.
+          const existingProducerId = (err.body as { existingProducerId: string }).existingProducerId;
+          spinner.message(`"${baseSlug}" is already registered — reclaiming it instead of creating a duplicate`);
+          try {
+            created = expectApiKind(await reclaimProducer(bruceApiUrl, options.agentKey, existingProducerId));
+          } catch (reclaimErr) {
+            spinner.stop("Failed", 1);
+            p.log.error(String(reclaimErr));
+            process.exitCode = 1;
+            return;
+          }
+        } else {
+          spinner.stop("Failed", 1);
+          p.log.error(String(err));
+          process.exitCode = 1;
+          return;
+        }
+      }
+    }
+
+    spinner.stop(`Registered as "${created!.producerSlug}"`);
+    writeProducerManifest({ producerId: created!.producerId, slug: created!.producerSlug });
+    credentials = mergeCredentials({
+      producer: {
+        apiKey: created!.apiKey,
+        bruceApiUrl,
+        producerId: created!.producerId,
+        slug: created!.producerSlug,
+        name: created!.producerName,
+      },
+    });
+  }
 
   if (!credentials.producer && !credentials.consumers) {
     const role =
@@ -86,6 +177,25 @@ export async function initCommand(options: InitCommandOptions = {}): Promise<voi
     }
   }
 
+  // Same-repo "this API connects to its own database" detection (DESIGN_NOTES.md §19): a
+  // sibling bruce/db-producer.json means this exact repo also ran `bruce producers connect-db`
+  // at some point — a far more reliable signal than parsing DATABASE_URL usage out of source.
+  // Best-effort only: needs an agent_key to call the by-slug endpoint, and a 409 (the other
+  // half of a parallel registration batch already made this link) is expected, not an error.
+  if (credentials.producer && options.agentKey) {
+    const dbManifest = readDbProducerManifest();
+    if (dbManifest) {
+      const linked = await linkDbConnection(
+        credentials.producer.bruceApiUrl,
+        options.agentKey,
+        dbManifest.slug,
+        credentials.producer.slug,
+        credentials.producer.producerId,
+      );
+      if (linked) p.log.info(`Detected this repo also owns a database producer ("${dbManifest.slug}") — linked as a database connection.`);
+    }
+  }
+
   const sha = currentCommit();
 
   if (credentials.producer) {
@@ -109,6 +219,19 @@ export async function initCommand(options: InitCommandOptions = {}): Promise<voi
   }
 
   for (const [slug, consumer] of Object.entries(credentials.consumers ?? {})) {
+    // Best-effort re-fetch if this relationship was linked before the producer had published
+    // anything yet (docsPath() never got written — see DESIGN_NOTES.md §20). consumerInitPrompt
+    // tells Claude to read this file first; leaving it silently missing forever would mean every
+    // scan runs worse than intended, not just the first one where it was genuinely unavailable.
+    if (!existsSync(docsPath(slug))) {
+      try {
+        const markdown = await fetchDocs(consumer.bruceApiUrl, consumer.token, consumer.producerId);
+        writeFileSync(docsPath(slug), markdown);
+      } catch {
+        // Still not published — proceed without it, same as before this existed.
+      }
+    }
+
     const spinner = p.spinner();
     spinner.start(`Scanning repo for usage of "${consumer.producerName}" (Claude)`);
     try {

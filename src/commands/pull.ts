@@ -3,7 +3,31 @@ import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { fetchDocs, pull } from "../lib/api.js";
 import { readCredentials } from "../lib/credentials.js";
-import { docsPath } from "../lib/paths.js";
+import { consumerMapPath, docsPath } from "../lib/paths.js";
+import { ConsumerMappingSchema } from "../shared/index.js";
+
+/**
+ * Bruce already knows exactly which of THIS repo's files read the field that just changed —
+ * bruce/consumers/<slug>-map.json (written by `bruce init`/`bruce scan`) records a `usedIn` file
+ * list per field, purely from a local file this command already has on disk, no extra request.
+ * Reporting "field X was renamed" without also saying "...and your code reads it in these files"
+ * leaves the agent to go grep for it — this closes that gap. Falls back silently (no file list)
+ * if the mapping doesn't exist yet or the field isn't found there; that's just a lesser version
+ * of the same report, not a failure.
+ */
+function usedInFiles(slug: string, endpoint: string, fieldName: string): string[] {
+  const path = consumerMapPath(slug);
+  if (!existsSync(path)) return [];
+  try {
+    const mapping = ConsumerMappingSchema.parse(JSON.parse(readFileSync(path, "utf-8")));
+    const [method, ...pathParts] = endpoint.split(" ");
+    const epPath = pathParts.join(" ");
+    const ep = mapping.endpoints.find((e) => e.method === method && e.path === epPath);
+    return ep?.fields[fieldName]?.usedIn ?? [];
+  } catch {
+    return [];
+  }
+}
 
 export async function pullCommand(): Promise<void> {
   p.intro(pc.bold("bruce pull"));
@@ -54,6 +78,8 @@ export async function pullCommand(): Promise<void> {
         `${severityColor(change.severity.toUpperCase())} ${change.endpoint} — ${change.change.kind}: ${change.change.field}${change.change.replacement ? ` → ${change.change.replacement}` : ""}`,
       );
       if (change.migration.notes) p.log.message(pc.dim(`  ${change.migration.notes}`));
+      const files = usedInFiles(slug, change.endpoint, change.change.field);
+      if (files.length > 0) p.log.message(pc.dim(`  used in: ${files.join(", ")}`));
       if (id) p.log.message(pc.dim(`  fixed this? run: bruce ack ${id}`));
     });
   }

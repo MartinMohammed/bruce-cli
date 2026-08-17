@@ -1,7 +1,7 @@
 export function publisherInitPrompt(producerSlug: string, producerName: string, targetPath: string): string {
   return `You are acting as the \`bruce init\` command for Bruce, a change-intelligence tool that gives AI coding agents missing cross-repository context. You are running inside the repository for "${producerName}" (slug: "${producerSlug}"), which is registered with Bruce as a PUBLISHER — this project owns and exposes an API.
 
-Your job: explore this repository's source code to find every HTTP endpoint it exposes (route handlers, controllers, OpenAPI specs, etc.), determine the shape of each endpoint's JSON response, and write a contract snapshot describing it.
+Your job: explore this repository's source code to find every HTTP endpoint it exposes (route handlers, controllers, OpenAPI specs, etc.), determine the shape of each endpoint's JSON response, and write a contract snapshot describing it. Also identify this project's tech stack (language, runtime, framework — from package.json/requirements.txt/go.mod/Gemfile/etc., not guesses).
 
 Write your findings to the file \`${targetPath}\` (relative to the repo root) using your Edit or Write tool. The file MUST be valid JSON matching exactly this shape:
 
@@ -22,7 +22,8 @@ Write your findings to the file \`${targetPath}\` (relative to the repo root) us
       }
     }
   ],
-  "docsMarkdown": "<a short markdown API reference summarizing every endpoint, for consumers to read>"
+  "docsMarkdown": "<a short markdown API reference summarizing every endpoint, for consumers to read>",
+  "techStack": ["<2-4 tags from the fixed vocabulary below, most-specific-framework first>"]
 }
 
 Rules:
@@ -30,6 +31,7 @@ Rules:
 - For nested response fields (e.g. a field nested under customer.profile.name), use the full dotted path as the field name key.
 - Judge "criticality" by how the field is used: fields tied to billing, identity (ids, emails), or read in multiple places are "high" or "critical"; purely cosmetic/display fields are "low".
 - If you can tell from git history/comments that a field was renamed or restructured from an older name (rather than being newly added), set "replaces" to the old field name(s) — this is what lets Bruce tell consumers "X was renamed to Y" instead of just "X was removed".
+- "techStack" MUST only use tags from this exact list (omit anything that doesn't apply, don't invent new tags): nodejs, typescript, javascript, express, fastify, nextjs, react, vue, svelte, python, django, flask, fastapi, go, rust, java, spring, ruby, rails, php, laravel, dotnet, graphql, docker, postgresql, mysql, mongodb, redis, sqlite, supabase. Include the runtime/language (e.g. "nodejs" or "python") AND the web framework (e.g. "express") if both are evident — 2-4 tags total, most specific first.
 - Write ONLY to ${targetPath}. Do not modify any other files.
 - After writing the file, stop. Do not explain your work in your final response — just confirm the file was written.`;
 }
@@ -37,7 +39,7 @@ Rules:
 export function consumerInitPrompt(producerSlug: string, producerName: string, targetPath: string, docsPath: string): string {
   return `You are acting as the \`bruce init\` command for Bruce, a change-intelligence tool that gives AI coding agents missing cross-repository context. You are running inside a repository that CONSUMES the "${producerName}" API (slug: "${producerSlug}"). Bruce has already downloaded that API's current documentation to \`${docsPath}\` — read it first to know what endpoints and fields exist upstream.
 
-Your job: find every place in this repository's source code that calls the "${producerName}" API (HTTP requests, SDK calls, fetch/axios calls to its base URL, etc.), and for each endpoint actually used, determine which response fields this codebase reads, how important each field is here, which files use it, and how errors are handled.
+Your job: find every place in this repository's source code that calls the "${producerName}" API (HTTP requests, SDK calls, fetch/axios calls to its base URL, etc.), and for each endpoint actually used, determine which response fields this codebase reads, how important each field is here, which files use it, and how errors are handled. Also identify THIS repository's own tech stack (language, runtime, framework — from package.json/requirements.txt/go.mod/Gemfile/etc.) — not the producer's, this repo's own.
 
 Write your findings to the file \`${targetPath}\` (relative to the repo root) using your Edit or Write tool. The file MUST be valid JSON matching exactly this shape:
 
@@ -60,12 +62,14 @@ Write your findings to the file \`${targetPath}\` (relative to the repo root) us
         "<error case, e.g. not_found, timeout>": "handled" | "missing"
       }
     }
-  ]
+  ],
+  "techStack": ["<2-4 tags from the fixed vocabulary below, most-specific-framework first>"]
 }
 
 Rules:
 - Only include fields this codebase actually reads — don't list the whole upstream schema, only what's consumed.
 - "usedIn" should list every file that reads that specific field, not just where the API call itself lives.
+- "techStack" MUST only use tags from this exact list (omit anything that doesn't apply, don't invent new tags): nodejs, typescript, javascript, express, fastify, nextjs, react, vue, svelte, python, django, flask, fastapi, go, rust, java, spring, ruby, rails, php, laravel, dotnet, graphql, docker, postgresql, mysql, mongodb, redis, sqlite, supabase. This describes THIS repo (the consumer), not the producer it's calling.
 - Write ONLY to ${targetPath}. Do not modify any other files.
 - After writing the file, stop. Do not explain your work in your final response — just confirm the file was written.`;
 }
